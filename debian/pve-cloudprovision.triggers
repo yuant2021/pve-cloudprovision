@@ -1,0 +1,4 @@
+# reload pvedaemon, pveproxy, pve-ha-lrm, ... (pve-manager / pve-ha-manager)
+activate-noawait pve-api-updates
+# re-add our script tag when pve-manager ships a new web UI template
+interest-noawait /usr/share/pve-manager/index.html.tpl

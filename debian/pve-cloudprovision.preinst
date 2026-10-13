@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+# pve-cloudprovision ships a wrapper for this module, the original is diverted
+# next to it and loaded by the wrapper (see src/divert/).
+divert() {
+    dpkg-divert --package pve-cloudprovision --add --rename \
+        --divert "$1.pve-cloudprovision-orig" "$1" >/dev/null
+}
+
+case "$1" in
+    install|upgrade)
+        divert /usr/share/perl5/PVE/API2/Nodes.pm
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,11 @@
+pve-cloudprovision (1.0.0) trixie; urgency=medium
+
+  * Initial release: create cloud servers from the QEMU templates of the
+    cluster with CPU, memory, system and data disks and any number of network
+    devices, each with routed IPs (pve-routedip), rate limit, traffic quota
+    (pve-trafficd) and the guest IP config derived from the routed IPs
+    (cloud-init); reinstall with a new template keeping the settings; clone
+    and migrate templates on local storage of other nodes; API
+    (/nodes/{node}/cloudprovision), CLI (pve-cloudprovision) and web UI.
+
+ -- yuant <me@yuant.cc>  Tue, 13 Oct 2026 10:15:00 +0800

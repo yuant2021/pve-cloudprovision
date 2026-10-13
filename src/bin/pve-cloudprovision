@@ -1,0 +1,8 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use PVE::CLI::pve_cloudprovision;
+
+PVE::CLI::pve_cloudprovision->run_cli_handler();

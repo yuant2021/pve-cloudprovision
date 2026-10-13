@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+case "$1" in
+    remove|deconfigure)
+        /usr/share/pve-cloudprovision/index-patch revert || true
+        ;;
+esac
+
+exit 0

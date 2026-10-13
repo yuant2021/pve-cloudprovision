@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure|triggered)
+        # (re-)add the script tag to the web UI template
+        /usr/share/pve-cloudprovision/index-patch apply || true
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

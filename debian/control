@@ -1,0 +1,36 @@
+Source: pve-cloudprovision
+Section: admin
+Priority: optional
+Maintainer: yuant <me@yuant.cc>
+Build-Depends: debhelper-compat (= 13), libpve-common-perl (>= 9.0)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: pve-cloudprovision
+Architecture: all
+Depends: libjson-perl,
+         liburi-perl,
+         libpve-cluster-perl,
+         libpve-common-perl (>= 9.0),
+         libpve-storage-perl (>= 9.0),
+         openssh-client,
+         pve-manager (>= 9.0),
+         pve-routedip (>= 1.1.2),
+         pve-trafficd (>= 1.0.0),
+         qemu-server (>= 9.0),
+         ${misc:Depends},
+         ${perl:Depends},
+Description: cloud server provisioning for Proxmox VE
+ Creates virtual machines from the QEMU templates of the cluster with the
+ CPU, memory, disks and any number of network devices chosen at creation.
+ Each network device gets its own routed IPs (pve-routedip, any prefix
+ length), rate limit, traffic quota (pve-trafficd) and guest IP config through
+ cloud-init, derived from the routed IPs.
+ .
+ Servers can be reinstalled with a new template: the current settings are
+ saved, the system disks are re-created from the template and the settings
+ restored. Templates on local storage of other nodes are cloned there and
+ migrated, servers can be migrated as usual.
+ .
+ Adds a "Create Cloud Server" button next to "Create VM", a Cloud Server page
+ to the VM and Datacenter views and the /nodes/{node}/cloudprovision API.

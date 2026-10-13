@@ -1,0 +1,10 @@
+*.deb
+*.buildinfo
+*.changes
+debian/pve-cloudprovision/
+debian/.debhelper/
+debian/files
+debian/*.substvars
+debian/*.debhelper
+debian/*.debhelper.log
+debian/debhelper-build-stamp
