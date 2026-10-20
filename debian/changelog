@@ -1,3 +1,11 @@
+pve-cloudprovision (1.1.0) trixie; urgency=medium
+
+  * POST /nodes/{node}/qemu/{vmid}/cloudprovision/ipconfig (CLI sync-ipconfig):
+    derive the cloud-init IP config of every network device from its current
+    routed IPs again and regenerate the cloud-init drive.
+
+ -- yuant <me@yuant.cc>  Tue, 20 Oct 2026 23:30:00 +0800
+
 pve-cloudprovision (1.0.0) trixie; urgency=medium
 
   * Initial release: create cloud servers from the QEMU templates of the

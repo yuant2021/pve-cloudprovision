@@ -1,6 +1,6 @@
 package PVE::API2::CloudProvision::VM;
 
-# /nodes/{node}/qemu/{vmid}/cloudprovision: state of a cloud server, reinstall
+# /nodes/{node}/qemu/{vmid}/cloudprovision: state of a cloud server, reinstall, ipconfig sync
 #
 # Requests go to the node the guest is on, whatever {node} says, so callers do
 # not have to follow migrations.
@@ -225,6 +225,41 @@ __PACKAGE__->register_method({
         return $rpcenv->fork_worker('cpreinstall', $plan->{vmid}, $authuser, sub {
             my ($upid) = @_;
             PVE::CloudProvision::Provision::reinstall_worker($plan, $upid);
+        });
+    },
+});
+
+__PACKAGE__->register_method({
+    name => 'sync_ipconfig',
+    path => 'ipconfig',
+    method => 'POST',
+    protected => 1,
+    proxyto_callback => \&guest_node,
+    description => "Derive the cloud-init IP config (ipconfigX) of every network device from its"
+        . " current routed IPs again, also ipconfigX changed since, and regenerate the cloud-init"
+        . " drive. The guest applies it at its next boot; the changed config makes cloud-init treat"
+        . " that boot as a new instance (e.g. the password is set again, new SSH host keys).",
+    permissions => {
+        check => ['perm', '/vms/{vmid}', ['VM.Config.Cloudinit']],
+    },
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            node => get_standard_option('pve-node'),
+            vmid => get_standard_option('pve-vmid'),
+        },
+    },
+    returns => { type => 'string', description => "UPID of the task." },
+    code => sub {
+        my ($param) = @_;
+
+        my $rpcenv = PVE::RPCEnvironment::get();
+        my $authuser = $rpcenv->get_user();
+        my $vmid = $param->{vmid};
+        PVE::QemuConfig->load_config($vmid); # the VM exists (on this node)
+
+        return $rpcenv->fork_worker('cpipconfig', $vmid, $authuser, sub {
+            PVE::CloudProvision::Provision::sync_ipconfig_worker($vmid);
         });
     },
 });

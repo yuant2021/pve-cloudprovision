@@ -184,6 +184,61 @@ sub request_ipconfig {
     return PVE::CloudProvision::Spec::nic_ipconfig($nic, routed_gateways($opts, $rnic));
 }
 
+# Derive the cloud-init ipconfigX of the network devices from their current routed IPs
+# again, also those changed since (a reinstall keeps changed ones), record them as
+# derived and regenerate the cloud-init drive: the guest applies them at its next boot.
+# A derived ipconfigX of a device without routed IPs any more is removed, as a reinstall
+# does. Runs as a worker; returns { netX => ipconfig }.
+sub sync_ipconfig_worker {
+    my ($vmid) = @_;
+
+    PVE::RPCEnvironment::get()->set_user('root@pam');
+
+    my $meta = PVE::CloudProvision::Config::load_meta($vmid);
+    my $state = ($meta // {})->{state} // '';
+    die "VM $vmid is being created or reinstalled\n" if $state eq 'creating' || $state eq 'reinstalling';
+
+    my $conf = PVE::QemuConfig->load_config($vmid);
+    my $routed = PVE::RoutedIP::Config::load_vm_config($vmid);
+    my $opts = PVE::RoutedIP::Config::effective_options();
+    my $auto_old = ($meta // {})->{'auto-ipconfig'} // {};
+    my $auto = {};
+    my $param = {};
+    my @delete;
+    for my $net (sort { ($a =~ s/^net//r) <=> ($b =~ s/^net//r) } grep { m/^net\d+$/ } keys %$conf) {
+        my ($i) = $net =~ m/(\d+)$/;
+        my $cur = $conf->{"ipconfig$i"};
+        my $rnic = $routed->{nics}->{$net};
+        my $value = $rnic
+            ? PVE::CloudProvision::Spec::nic_ipconfig($rnic, routed_gateways($opts, $rnic))
+            : undef;
+        if (defined($value)) {
+            print "ipconfig$i: $value\n";
+            $auto->{$net} = $value;
+            $param->{"ipconfig$i"} = $value if !defined($cur) || $cur ne $value;
+        } elsif (defined($cur) && defined($auto_old->{$net}) && $auto_old->{$net} eq $cur) {
+            print "ipconfig$i: removed, $net has no routed IPs\n";
+            push @delete, "ipconfig$i";
+        }
+    }
+    update_config($vmid, $param, \@delete);
+
+    if (PVE::QemuConfig->has_cloudinit(PVE::QemuConfig->load_config($vmid))) {
+        print "regenerating the cloud-init drive\n";
+        PVE::API2::Qemu->cloudinit_update({ node => nodename(), vmid => $vmid });
+    } else {
+        print "no cloud-init drive: the guest config is used when one is added\n";
+    }
+
+    PVE::CloudProvision::Config::update_meta($vmid, sub {
+        my ($m) = @_;
+        return undef if !$m; # not a cloud server of this plugin: no state to keep
+        $m->{'auto-ipconfig'} = $auto;
+        return $m;
+    });
+    return $auto;
+}
+
 # update_vm logs the change itself ('update VM ...', password hidden)
 sub update_config {
     my ($vmid, $param, $delete) = @_;

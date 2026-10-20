@@ -229,6 +229,7 @@ PVE.cloudprovision.Utils = {
 Proxmox.Utils.override_task_descriptions({
     cpcreate: ['VM', gettext('Create cloud server')],
     cpreinstall: ['VM', gettext('Reinstall')],
+    cpipconfig: ['VM', gettext('Sync cloud-init IP config')],
 });
 
 Ext.define('pve-cloudprovision-template', {

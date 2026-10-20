@@ -103,6 +103,7 @@ pve-cloudprovision create 9000 --name web1 --cores 2 --memory 2048 --disksize 20
 pve-cloudprovision list
 pve-cloudprovision show 100
 pve-cloudprovision reinstall 100 --template 9001 --cipassword 'new-secret'
+pve-cloudprovision sync-ipconfig 100
 ```
 
 ### 网卡参数（`netN`）
@@ -135,6 +136,7 @@ pve-cloudprovision reinstall 100 --template 9001 --cipassword 'new-secret'
 | POST | `/nodes/{node}/cloudprovision` | 在该节点创建云服务器，返回任务 UPID |
 | GET | `/nodes/{node}/qemu/{vmid}/cloudprovision` | 云服务器状态、系统盘、各网卡（路由 IP、cloud-init IP、配额）、上次重装保存的参数 |
 | POST | `/nodes/{node}/qemu/{vmid}/cloudprovision/reinstall` | 重装：`template`（默认上次的）、`storage`、`full`、`ciuser`、`cipassword`、`sshkeys`、`start`，返回任务 UPID |
+| POST | `/nodes/{node}/qemu/{vmid}/cloudprovision/ipconfig` | 按当前路由 IP 重新生成各网卡的 `ipconfigN`（手工改过的也覆盖，记为自动生成）并重新生成 cloud-init 盘，返回任务 UPID；虚拟机下次启动时应用 |
 
 `/nodes/{node}/qemu/{vmid}/cloudprovision…` 自动转发到虚拟机当前所在的节点。
 
@@ -145,6 +147,7 @@ pve-cloudprovision reinstall 100 --template 9001 --cipassword 'new-secret'
   配置路由 IP 或流量统计时还需 `/` 上的 `Sys.Modify`（与 pve-routedip、pve-trafficd 相同）。
 - 重装：虚拟机上的 `VM.Allocate`、`VM.Config.Disk`、`VM.Config.Cloudinit`、`VM.PowerMgmt`，
   模板上的 `VM.Clone`，存储上的 `Datastore.AllocateSpace`。
+- 同步 ipconfig：虚拟机上的 `VM.Config.Cloudinit`。
 - 读：`VM.Audit`（模板列表也接受 `VM.Clone`）。
 
 权限检查通过后，任务以 root@pam 执行（克隆、迁移等调用 `qm`，其它节点经 SSH）。
@@ -183,7 +186,8 @@ pve-cloudprovision reinstall 100 --template 9001 --cipassword 'new-secret'
 - 虚拟机内的 IPv4 网关（`169.254.0.1`）不在 `/32` 子网内，需要 cloud-init 渲染为 on-link 路由
   （见上文“模板”，Debian 12 自带的 cloud-init 22.4 不会）。
 - cloud-init 只在虚拟机首次启动（新系统盘）时生效，创建后修改路由 IP 不会改变运行中系统内的地址，
-  重装时才按新路由 IP 生成。
+  重装时才按新路由 IP 生成。同步 ipconfig（`…/cloudprovision/ipconfig`）后，虚拟机下次启动时 cloud-init
+  因配置变化把这次启动当作新实例：应用新地址，同时重新设置密码（恢复为 `cipassword`）、重新生成 SSH 主机密钥。
 - 所有节点都要安装三个插件。
 
 ## 开发

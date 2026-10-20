@@ -90,6 +90,7 @@ our $cmddef = {
         $PVE::RESTHandler::standard_output_options,
     ],
     reinstall => ['PVE::API2::CloudProvision::VM', 'reinstall', ['vmid'], { node => $nodename }, $upid_exit],
+    'sync-ipconfig' => ['PVE::API2::CloudProvision::VM', 'sync_ipconfig', ['vmid'], { node => $nodename }, $upid_exit],
 };
 
 1;
